@@ -1,6 +1,10 @@
 body {
     background-color: #eef2f7;
   }
+/* Manito al pasar por la tarjeta: indica que se puede hacer clic para editar */
+  .card {
+    cursor: pointer;
+  }
 /* Colores de las tarjetas según su estado */
   .card[data-estado="POR HACER"] {
     background-color: #e9ecef;

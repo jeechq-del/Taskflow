@@ -38,6 +38,18 @@ class TaskManager {
         }
     }
 
+    // Edita todos los datos de una tarea (Tarea: Actualizar una tarea)
+    editTask(taskId, datos) {
+        const task = this.getTaskById(taskId);
+        if (task) {
+            task.nombre = datos.nombre;
+            task.descripcion = datos.descripcion;
+            task.asignadoA = datos.asignadoA;
+            task.fechaDeEntrega = datos.fechaDeEntrega;
+            task.estado = datos.estado;
+        }
+    }
+
     // Cambia la persona asignada de una tarea
     assignTask(taskId, assignee) {
         const task = this.tasks.find((task) => task.id === taskId);
@@ -176,12 +188,27 @@ function crearTarjeta(task) {
         taskManager.deleteTask(task.id);
         tarjeta.remove();
         taskManager.save();
+        // Si borramos la tarea que estábamos editando, limpiamos el formulario
+        if (idEditando === task.id) {
+            salirModoEdicion();
+        }
     });
 
     return tarjeta;
 }
 
 const formulario = document.getElementById("formTarea");
+const btnGuardar = document.getElementById("btnGuardar");
+
+// null = estamos creando; un número = estamos editando la tarea con ese id
+let idEditando = null;
+
+// Pone el formulario otra vez en modo "Guardar"
+function salirModoEdicion() {
+    idEditando = null;
+    btnGuardar.textContent = "Guardar tarea";
+    formulario.reset();
+}
 
 formulario.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -197,10 +224,15 @@ formulario.addEventListener("submit", (event) => {
         estado: document.getElementById("estado").value,
     };
 
-    taskManager.addTask(nuevaTarea); // anotar en el cuaderno
-    taskManager.render();
-    taskManager.save();
-    formulario.reset();
+    if (idEditando === null) {
+        taskManager.addTask(nuevaTarea); // crear: anotar en el cuaderno
+    } else {
+        taskManager.editTask(idEditando, nuevaTarea); // actualizar: corregir en el cuaderno
+    }
+
+    taskManager.render(); // redibujar la pizarra
+    taskManager.save(); // guardar en el cajón (LS)
+    salirModoEdicion(); // botón vuelve a "Guardar" y formulario vacío
 });
 // ocultamos los errores
 formulario.addEventListener("input", () => {
@@ -219,5 +251,29 @@ listaTareas.addEventListener("click", (event) => {
         tarea.estado = "HECHO"; // cambiar estado
         taskManager.render(); // redibujar;
         taskManager.save();
+        return;
+    }
+
+    // Si el clic fue en otro botón (Eliminar), no editamos
+    if (event.target.closest("button")) {
+        return;
+    }
+
+    // Clic en la tarjeta → cargar sus datos en el formulario
+    const card = event.target.closest(".card");
+    if (card) {
+        const id = Number(card.dataset.id);
+        const tarea = taskManager.getTaskById(id);
+
+        document.getElementById("nombre").value = tarea.nombre;
+        document.getElementById("descripcion").value = tarea.descripcion;
+        document.getElementById("asignadoA").value = tarea.asignadoA;
+        document.getElementById("fechaEntrega").value = tarea.fechaDeEntrega;
+        document.getElementById("estado").value = tarea.estado;
+
+        idEditando = id;
+        btnGuardar.textContent = "Actualizar";
+        mostrarErrores([]);
+        window.scrollTo({ top: 0, behavior: "smooth" }); // subir al formulario
     }
 });
